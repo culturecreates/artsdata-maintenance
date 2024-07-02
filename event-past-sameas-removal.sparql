@@ -1,0 +1,38 @@
+PREFIX schema: <http://schema.org/>
+PREFIX adm: <http://kg.artsdata.ca/minted/>
+
+# This SPARQL is used to remove the external sameAs for past events 
+# so that Artsdata minted events will not get denatured 
+# if the sameAs URI is used for a different event in the future.
+# It should be run daily and can be run several times with any problem.
+# 
+# Background:
+# Many external sameAs URIs from crawled websites 
+# are not meant to last over several years, and the same URI
+# may be used the following year or season. 
+# For example, a URI generated using the name of the webpage.
+# The following year the same webpage can be used for a different event.
+# Event sameAs are only unasserted, meaning the quoted triple remains visible
+# in Unasserted Properties and is not longer used to link new entities.
+
+delete {
+    ?s schema:sameAs ?sameAs .
+}
+where {
+    values ?g {
+        adm:K23  
+        adm:K43 
+    }
+    graph ?g {
+        ?s a schema:Event ;
+           schema:startDate ?startDate ;
+           schema:sameAs ?sameAs .
+        << ?s schema:sameAs ?sameAs >> ?a ?b .
+        filter(contains(str(?s),"kg.artsdata.ca"))
+        OPTIONAL {
+            ?s  schema:endDate ?endDate .
+            filter( ?endDate < now() )
+        }
+        filter(?startDate < now())
+    }
+}
